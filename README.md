@@ -1,6 +1,7 @@
-# Nemotron-Personas-Korea — NLP Analysis
+# Nemotron-Personas-Korea — Psychographic Clustering
 
-> Exploratory NLP analysis of NVIDIA's [Nemotron-Personas-Korea](https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea) dataset: 1M synthetic Korean persona profiles analyzed by age, gender, and region.
+> Can we build meaningful user clusters from synthetic Korean persona data **without demographic variables**?  
+> This project applies NLP and unsupervised clustering to NVIDIA's [Nemotron-Personas-Korea](https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea) dataset — 1M synthetic Korean persona profiles — to explore behavior- and values-based segmentation as an alternative to demographic stereotyping.
 
 ---
 
@@ -13,110 +14,137 @@
 | Language | Korean |
 | Missing values | None |
 
-Each row is a synthetic persona with structured demographic fields and 6 domain-specific text descriptions: professional, sports, arts, travel, culinary, and family life.
+Each row is a synthetic persona with structured demographic fields and 6 domain-specific text descriptions (professional, sports, arts, travel, culinary, hobbies) plus values/identity columns.
 
 ---
 
-## Analysis Overview
+## Notebooks
 
-### 1. Exploratory Data Analysis
-- Distribution of age, gender, marital status, education level, and region
+### Notebook 01 · EDA & Keyword Analysis
+[`notebook/01_korean-persona-nlp-analysis.ipynb`](notebook/01_korean-persona-nlp-analysis.ipynb)
+
+Baseline exploration: who is in the dataset and what language do they use?
+
+- Distribution of age group, gender, region, education level
 - Text length statistics across all persona columns
-
-### 2. Keyword Extraction by Group (TF-IDF)
-Extracted group-distinctive keywords using TF-IDF — words frequent within a group but rare across others.
-
-- **By age group** (20s–80s+)
-- **By region** (top 8 provinces)
-- **By gender**
-- **Cross: age × gender**
-
-### 3. Personality vs. Interest Separation
-Split persona text into two domains:
-- **Personality** — `persona` + `cultural_background`
-- **Interests** — `hobbies_and_interests` + `sports` + `arts` + `travel` + `culinary`
-
-### 4. Domain Keyword Analysis (Verb+Noun Phrases)
-Used `kiwipiepy` morphological analyzer to extract **verb+noun phrases** (e.g., *배달_시키다*, *외식_하다*) instead of nouns alone — capturing behavioral direction, not just topics.
-
-Analyzed across 6 domains per group:
-
-| Domain | Column |
-|--------|--------|
-| 🍜 Food | `culinary_persona` |
-| 🏛️ Cultural Background | `cultural_background` |
-| 🎯 Hobbies & Interests | `hobbies_and_interests` |
-| ⚽ Sports | `sports_persona` |
-| 🎨 Arts | `arts_persona` |
-| ✈️ Travel | `travel_persona` |
-
-### 5. WordCloud Visualization
-Generated per **age × gender × region** combination (14 figures × top-3 provinces × 6 domains).
-
-### 6. Domain-level Verb+Noun Phrase Summaries
-Generated natural-language persona summaries per group × domain using template sentences.
-
-Analyzed across 4 groupings: age group, gender, region (top 8 provinces), gender × age cross.
-
-### 7. Key Insights & Limitations
-
-**Findings:**
-- **Age**: 20–30s show high activity in sports/travel; 60s+ lean toward cultural background and nature keywords; 40–50s show food/family stability framing
-- **Gender**: Male personas concentrate on sports and technical/career terms; Female personas show more relational and sensory language in arts, travel, and food
-- **Region**: Seoul/Gyeonggi cluster around urban professional keywords; provincial areas (Gyeongsang, Jeolla, Chungcheong) surface regional food names and traditional/nature terms
-
-**Limitations:**
-- Dataset is **fully synthetic** — distributions reflect NVIDIA's generation process, not real Korean population behavior
-- `kiwipiepy` morphological parsing can mis-segment compound words and neologisms
-- TF-IDF suppresses cross-group common vocabulary, so findings describe *relative* distinctiveness, not absolute frequency
-- Persona text columns have different average lengths; shorter columns (sports, arts) produce noisier TF-IDF signals
+- TF-IDF keyword extraction by **age group / region / gender / age × gender**
+- Personality vs. interest keyword separation
+- Domain keyword analysis across 6 domains (food, culture, hobbies, sports, arts, travel)
+- WordCloud per age × gender × region combination
 
 ---
 
-## Key Methods
+### Notebook 02 · Behavioral Clustering
+[`notebook/02_behavioral-clustering.ipynb`](notebook/02_behavioral-clustering.ipynb)
 
-| Method | Purpose |
-|--------|---------|
-| `kiwipiepy` | Korean morphological analysis |
-| TF-IDF (`scikit-learn`) | Group-distinctive keyword extraction |
-| Verb+Noun phrase extraction | Behavioral direction (not just topics) |
-| WordCloud | Visual summary per group × domain |
-| Cosine similarity | Pairwise group distinctiveness across keyword vectors |
+**Research question**: Can behavioral text alone (no demographics) produce meaningful psychographic clusters?
+
+| Step | Method |
+|------|--------|
+| Text | 5 behavioral columns concatenated |
+| Morphology | `kiwipiepy` noun extraction |
+| Embedding | SVD 300D (Option A) vs. Sentence Transformer `ko-sroberta-multitask` (Option B) |
+| Dim reduction | UMAP 50D (clustering) + 2D (visualization) |
+| Clustering | K-Means (K=4 selected) + HDBSCAN comparison |
+| Interpretation | TF-IDF keywords · Radar Chart · Word Network |
+| Reverse analysis | Cluster × age / gender / region Heatmap + Sankey |
+| Behavior signals | 5 signals: 자율성·사회성·정보탐색·경험추구·루틴안정 |
+| Agent mapping | Amershi G6·G11·G13 guideline mapping per cluster |
+
+**Key findings:**
+- Option B (Sentence Transformer) wins: Silhouette 0.41 vs. 0.34
+- K=4 optimal: Silhouette 0.60, Davies-Bouldin 0.56 (both best simultaneously)
+- HDBSCAN produced 28 clusters with 23.5% noise — K-Means adopted
+- Cluster 2 stands out: 경주·유적지·역사·부여·불국사 (historic travel type)
+- Social keywords (친구·가족) appear 4.40×/row vs. autonomy 0.28×/row — LLM generation bias confirmed
 
 ---
 
-## Output
+### Notebook 03 · Values-Based Clustering
+[`notebook/03_values-based-clustering.ipynb`](notebook/03_values-based-clustering.ipynb)
+
+**Research question**: Do values and life orientation (not behavior) form distinct clusters, and are they independent of demographics?
+
+| Layer | Columns | Role |
+|-------|---------|------|
+| Layer A | `persona`, `cultural_background`, `career_goals_and_ambitions` | Clustering input |
+| Layer B | `hobbies_and_interests`, `sports_persona`, `arts_persona`, `travel_persona`, `culinary_persona` | Comparison only |
+| Demographics | `age_group`, `sex`, `province`, `education_level`, `occupation` | Reverse analysis only |
+
+| Step | Method |
+|------|--------|
+| Morphology | `kiwipiepy` lemmatization (verb/adj → base form) |
+| Embedding | Sentence Transformer `ko-sroberta-multitask` (768D) |
+| Dim reduction | UMAP 50D (clustering) + 2D (visualization) |
+| Clustering | K-Means + HDBSCAN comparison |
+| Reverse A | Values clusters × demographics Heatmap + Sankey |
+| Reverse B | Values clusters × behavioral clusters cross-Heatmap |
+| Agent mapping | Amershi G6·G11·G13 per values-cluster profile |
+
+**Core argument:**  
+If values clusters distribute evenly across age/gender/region → demographic stereotyping in AI design is empirically refuted.  
+If values and behavior clusters don't align → the two must be modeled as independent layers.
+
+---
+
+## Design Philosophy
+
+> Demographics tell you *who* someone is. Behavior tells you *what* they do. Values tell you *why*.
+
+This project tests whether LLM-generated synthetic personas encode psychographic structure beyond demographic labels — and whether that structure can ground fairer, more adaptive AI agent design.
+
+**Amershi et al. (2019) guidelines addressed:**
+
+| Guideline | How |
+|-----------|-----|
+| G6 · Mitigate social biases | Clusters built without demographic input |
+| G11 · Explainability | TF-IDF keywords surfaced as cluster rationale |
+| G13 · Learn from user behavior | Behavior signals inform per-cluster agent strategy |
+
+---
+
+## Repository Structure
 
 ```
+notebook/
+├── 01_korean-persona-nlp-analysis.ipynb
+├── 02_behavioral-clustering.ipynb
+└── 03_values-based-clustering.ipynb
+
+src/
+└── nemotron_theme.py          # 오방색 × HuggingFace palette + chart helpers
+
 image/
-├── age_distribution.png
-├── province_distribution.png
-├── age_keywords_tfidf.png
-├── age_wordcloud.png
-├── province_keywords_tfidf.png
-├── sex_keywords_tfidf.png
-├── cross_age_sex_keywords.png
-├── age_personality_vs_interests.png
-├── wordcloud_3way_20대_남자.png
-├── wordcloud_3way_20대_여자.png
-└── ... (14 total)
+├── nb01/                      # EDA & keyword visualizations
+├── nb02/                      # Behavioral clustering outputs
+└── nb03/                      # Values-based clustering outputs
 ```
 
 ---
 
-## Requirements
+## Setup
 
 ```bash
-pip install datasets kiwipiepy scikit-learn wordcloud matplotlib pandas
+pip install datasets kiwipiepy scikit-learn sentence-transformers \
+            umap-learn hdbscan wordcloud matplotlib seaborn plotly kaleido
 ```
 
+Create a `.env` file in the project root:
+
+```
+HF_TOKEN=your_token_here
+```
+
+Run notebooks top to bottom in order (01 → 02 → 03).  
+Morphological analysis and embedding cells take ~10–25 min each.
+
 ---
 
-## Usage
+## Reference
 
-Run `Nemotron-Personas-Korea.ipynb` top to bottom.  
-Note: morphological analysis cells take ~25–35 min total on 1M rows (sampled per group).
+Amershi, S., et al. (2019). Software engineering for machine learning: A case study. *ICSE-SEIP*.  
+Dataset: NVIDIA. *Nemotron-Personas-Korea*. HuggingFace, 2024.
 
 ---
 
-*Dataset by NVIDIA. Analysis by [lucytheboss](https://github.com/lucytheboss).*
+*Analysis by [lucytheboss](https://github.com/lucytheboss).*
