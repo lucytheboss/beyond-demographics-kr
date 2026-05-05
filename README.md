@@ -1,150 +1,83 @@
-# Nemotron-Personas-Korea — Psychographic Clustering
+# beyond-demographics-kr
+> LLM이 생성한 합성 한국어 페르소나 데이터에서, 인구통계 없이 행동·가치관 텍스트만으로 의미 있는 사이코그래픽 군집을 추출할 수 있는가?
 
-> Can we build meaningful user clusters from synthetic Korean persona data **without demographic variables**?  
-> This project applies NLP and unsupervised clustering to NVIDIA's [Nemotron-Personas-Korea](https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea) dataset — 1M synthetic Korean persona profiles — to explore behavior- and values-based segmentation as an alternative to demographic stereotyping.
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![HuggingFace](https://img.shields.io/badge/HuggingFace-Datasets-yellow) ![License](https://img.shields.io/badge/License-MIT-green) ![Status](https://img.shields.io/badge/NB04-In_Progress-orange)
 
----
+## 연구 질문
 
-## Dataset
+1. 행동 텍스트만으로 인구통계와 독립적인 사이코그래픽 군집 추출이 가능한가?
+2. 가치관 텍스트와 행동 텍스트는 독립적인 레이어를 형성하는가?
+3. LLM이 생성한 한국어 페르소나에서 사회성 키워드가 과잉 표현되는가?
 
-| | |
-|---|---|
-| Source | `nvidia/Nemotron-Personas-Korea` (HuggingFace) |
-| Size | 1,000,000 rows · 26 columns |
-| Language | Korean |
-| Missing values | None |
+## 데이터셋
 
-Each row is a synthetic persona with structured demographic fields and 6 domain-specific text descriptions (professional, sports, arts, travel, culinary, hobbies) plus values/identity columns.
+Nemotron-Personas-Korea (NVIDIA, 2026) — 100만 행, 합성 한국인 페르소나
 
----
+## 파이프라인
 
-## Notebooks
-
-### Notebook 01 · EDA & Keyword Analysis
-[`notebook/01_korean-persona-nlp-analysis.ipynb`](notebook/01_korean-persona-nlp-analysis.ipynb)
-
-Baseline exploration: who is in the dataset and what language do they use?
-
-- Distribution of age group, gender, region, education level
-- Text length statistics across all persona columns
-- TF-IDF keyword extraction by **age group / region / gender / age × gender**
-- Personality vs. interest keyword separation
-- Domain keyword analysis across 6 domains (food, culture, hobbies, sports, arts, travel)
-- WordCloud per age × gender × region combination
-
----
-
-### Notebook 02 · Behavioral Clustering
-[`notebook/02_behavioral-clustering.ipynb`](notebook/02_behavioral-clustering.ipynb)
-
-**Research question**: Can behavioral text alone (no demographics) produce meaningful psychographic clusters?
-
-| Step | Method |
-|------|--------|
-| Text | 5 behavioral columns concatenated |
-| Morphology | `kiwipiepy` noun extraction |
-| Embedding | SVD 300D (Option A) vs. Sentence Transformer `ko-sroberta-multitask` (Option B) |
-| Dim reduction | UMAP 50D (clustering) + 2D (visualization) |
-| Clustering | K-Means (K=4 selected) + HDBSCAN comparison |
-| Interpretation | TF-IDF keywords · Radar Chart · Word Network |
-| Reverse analysis | Cluster × age / gender / region Heatmap + Sankey |
-| Behavior signals | 5 signals: 자율성·사회성·정보탐색·경험추구·루틴안정 |
-| Agent mapping | Amershi G6·G11·G13 guideline mapping per cluster |
-
-**Key findings:**
-- Option B (Sentence Transformer) wins: Silhouette 0.41 vs. 0.34
-- K=4 optimal: Silhouette 0.60, Davies-Bouldin 0.56 (both best simultaneously)
-- HDBSCAN produced 28 clusters with 23.5% noise — K-Means adopted
-- Cluster 2 stands out: 경주·유적지·역사·부여·불국사 (historic travel type)
-- Social keywords (친구·가족) appear 4.40×/row vs. autonomy 0.28×/row — LLM generation bias confirmed
-
----
-
-### Notebook 03 · Values-Based Clustering
-[`notebook/03_values-based-clustering.ipynb`](notebook/03_values-based-clustering.ipynb)
-
-**Research question**: Do values and life orientation (not behavior) form distinct clusters, and are they independent of demographics?
-
-| Layer | Columns | Role |
-|-------|---------|------|
-| Layer A | `persona`, `cultural_background`, `career_goals_and_ambitions` | Clustering input |
-| Layer B | `hobbies_and_interests`, `sports_persona`, `arts_persona`, `travel_persona`, `culinary_persona` | Comparison only |
-| Demographics | `age_group`, `sex`, `province`, `education_level`, `occupation` | Reverse analysis only |
-
-| Step | Method |
-|------|--------|
-| Morphology | `kiwipiepy` lemmatization (verb/adj → base form) |
-| Embedding | Sentence Transformer `ko-sroberta-multitask` (768D) |
-| Dim reduction | UMAP 50D (clustering) + 2D (visualization) |
-| Clustering | K-Means + HDBSCAN comparison |
-| Reverse A | Values clusters × demographics Heatmap + Sankey |
-| Reverse B | Values clusters × behavioral clusters cross-Heatmap |
-| Agent mapping | Amershi G6·G11·G13 per values-cluster profile |
-
-**Core argument:**  
-If values clusters distribute evenly across age/gender/region → demographic stereotyping in AI design is empirically refuted.  
-If values and behavior clusters don't align → the two must be modeled as independent layers.
-
----
-
-## Design Philosophy
-
-> Demographics tell you *who* someone is. Behavior tells you *what* they do. Values tell you *why*.
-
-This project tests whether LLM-generated synthetic personas encode psychographic structure beyond demographic labels — and whether that structure can ground fairer, more adaptive AI agent design.
-
-**Amershi et al. (2019) guidelines addressed:**
-
-| Guideline | How |
-|-----------|-----|
-| G6 · Mitigate social biases | Clusters built without demographic input |
-| G11 · Explainability | TF-IDF keywords surfaced as cluster rationale |
-| G13 · Learn from user behavior | Behavior signals inform per-cluster agent strategy |
-
----
-
-## Repository Structure
-
-```
-notebook/
-├── 01_korean-persona-nlp-analysis.ipynb
-├── 02_behavioral-clustering.ipynb
-└── 03_values-based-clustering.ipynb
-
-src/
-└── nemotron_theme.py          # 오방색 × HuggingFace palette + chart helpers
-
-image/
-├── nb01/                      # EDA & keyword visualizations
-├── nb02/                      # Behavioral clustering outputs
-└── nb03/                      # Values-based clustering outputs
+```mermaid
+graph LR
+  A[NB01 탐색·EDA] --> B[NB02 행동 군집화]
+  B --> C[NB03 가치관 군집화]
+  C --> D[NB04 시뮬레이터 예정]
 ```
 
----
+## 핵심 발견
 
-## Setup
+| 발견 | 수치 |
+|------|------|
+| UMAP 파이프라인 효과 | 768D Sil=0.0534 → 50D Sil=0.6018 (+1027%) |
+| 행동 군집 안정성 | ARI=1.0000 (5개 시드) |
+| 사회성 편향 | 사회성 4.37/행 vs 자율성 0.27/행 (16.1×) |
+| 가치관-행동 독립성 | 교차 Heatmap 대각선 평균 18.3%, ARI=0.0287, NMI=0.0378 |
+| 인구통계 독립성 | 행동·가치관 군집 모두 연령·성별 Heatmap 편중 없음 |
+
+### 행동 군집 — UMAP 공간
+![UMAP 2D scatter](image/nb02/umap_raw.png)
+
+### 가치관 군집 × 행동 도메인 프로파일
+![Radar Chart](image/nb02/cluster_radar.png)
+
+
+## 가치관 군집 (NB03, K=5)
+
+| ID | 군집명 | 비율 |
+|----|--------|------|
+| 0 | 자기계발·전환 모색형 | 28.7% |
+| 1 | 소박 일상·지역 공동체형 | 18.2% |
+| 2 | 현실적 목표 실천형 | 15.3% |
+| 3 | 관계·가족 중심형 | 19.4% |
+| 4 | 책임·안정 지향형 | 18.4% |
+
+## 한계점
+
+- 지역 변수 중-대 효과(Cramér's V=0.520): 생성 편향 vs 실제 지역 차이 미분리
+- 동일 임베딩 모델로 두 레이어를 인코딩해 공유 표현 편향 가능성
+- 합성 데이터 기반 — 실제 한국인 분포와의 차이 미검증
+- 자율성 키워드가 명사 중심 설계로 동사·부사형 표현 과소계산
+
+## 설치 및 실행
 
 ```bash
-pip install datasets kiwipiepy scikit-learn sentence-transformers \
-            umap-learn hdbscan wordcloud matplotlib seaborn plotly kaleido
+git clone https://github.com/lucytheboss/beyond-demographics-kr
+cd beyond-demographics-kr
+pip install -r requirements.txt
 ```
 
-Create a `.env` file in the project root:
+실행 순서: NB01 → NB02 → NB03
 
+## 인용
+
+```bibtex
+@misc{roh2026beyond,
+  title={Beyond Demographics: Psychographic Clustering of LLM-Generated Korean Persona Data},
+  author={Roh, Lucy},
+  year={2026},
+  note={Undergraduate independent research}
+}
 ```
-HF_TOKEN=your_token_here
-```
 
-Run notebooks top to bottom in order (01 → 02 → 03).  
-Morphological analysis and embedding cells take ~10–25 min each.
+## Acknowledgements
 
----
-
-## Reference
-
-Amershi, S., et al. (2019). Software engineering for machine learning: A case study. *ICSE-SEIP*.  
-Dataset: NVIDIA. *Nemotron-Personas-Korea*. HuggingFace, 2024.
-
----
-
-*Analysis by [lucytheboss](https://github.com/lucytheboss).*
+본 연구의 데이터 분석 코드 작성에 Claude (Anthropic)를 보조 도구로 활용하였다.
+데이터셋: NVIDIA Nemotron-Personas-Korea (Hyunwoo Kim et al., 2026)
