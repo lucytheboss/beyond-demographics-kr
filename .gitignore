@@ -1,10 +1,55 @@
-# Data files
-data/
+# ── 환경 변수 / 시크릿 ─────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets.py
+hf_token.txt
+*.token
 
-# Python
+# ── Python ─────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-.ipynb_checkpoints/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# macOS
+# ── Jupyter ────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# ── 대용량 데이터 / 임베딩 ──────────────────────────────────────
+data/
+*.npy
+*.npz
+*.pkl
+*.parquet
+*.arrow
+embeddings/
+
+# ── HuggingFace 캐시 ───────────────────────────────────────────
+~/.cache/huggingface/
+.cache/
+
+# ── 생성 이미지 (image/ 폴더는 커밋 여부 결정 필요) ───────────────
+# image/       
+
+# ── 가상환경 ───────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── macOS ─────────────────────────────────────────────────────
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE ────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
