@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(mv image/nb02/nb02_embedding_comparison.png image/nb02/embedding_comparison.png)",
+      "Bash(mv image/nb02/nb02_social_signal_dist.png image/nb02/social_signal_dist.png)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(xargs -I{} git show -s --format=\"%H%n%B%n---\" {})",
+      "Bash(git filter-branch *)",
+      "Bash(git stash *)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --msg-filter 'sed \"/Co-Authored-By: Claude Sonnet 4\\\\.6/d\" | sed \"/^[[:space:]]*$/d\"' -- --all)",
+      "Bash(git -C \"/Users/lucyroh/Desktop/STUDY/Data Projects/persona\" push)",
+      "Bash(git -C \"/Users/lucyroh/Desktop/STUDY/Data Projects/persona\" status)",
+      "Bash(git -C \"/Users/lucyroh/Desktop/STUDY/Data Projects/persona\" add .claude/settings.json \"image/nb03/\" \"notebook/02_behavioral-clustering.ipynb\" \"notebook/03_values-based-clustering.ipynb\")",
+      "Bash(git -C \"/Users/lucyroh/Desktop/STUDY/Data Projects/persona\" commit -m \"fix chi-square result notation and update reverse analysis A markdown in nb03\")"
     ]
   }
 }
